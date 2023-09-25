@@ -1,0 +1,8 @@
+metaflow
+pandas
+wget
+boto3
+python-dotenv
+fire
+supertriplets
+matplotlib

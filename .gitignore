@@ -1,5 +1,8 @@
 # custom
-s3-data
+s3-data/
+lfw_dataset/
+.metaflow*
+.vscode
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

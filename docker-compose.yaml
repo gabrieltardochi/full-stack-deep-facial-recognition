@@ -7,7 +7,7 @@ services:
       - MINIO_ACCESS_KEY=${S3_ACCESS_KEY}
       - MINIO_SECRET_KEY=${S3_SECRET_KEY}
     volumes:
-      - facial-regocnition-s3-volume:/s3-data
+      - ./s3-data:/s3-data
     command: minio server /s3-data --address :9000 --console-address :9001
     ports:
       - ${S3_API_PORT}:9000
@@ -40,12 +40,3 @@ services:
 networks:
   facial-regocnition-network:
     name: facial-regocnition-network
-
-volumes:
-  facial-regocnition-s3-volume:
-    name: facial-regocnition-s3-volume
-    driver: local
-    driver_opts:
-      type: 'none'
-      o: 'bind'
-      device: './s3-data'

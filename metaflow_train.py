@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from dotenv import load_dotenv
@@ -12,7 +11,7 @@ class PrintLogger(logging.Logger):
     """
 
     def handle(self, record):
-        print(f"{record.name}: {record.msg}", flush=True)
+        print(f"{record.name}: {record.msg}")
 
 
 class FacialRecognitionTrainFlow(FlowSpec):
@@ -261,7 +260,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
             examples=dev_examples,
             embeddings=dev_embeddings,
             normalize_l2=True,
-            sample_from_topk_hardest=3,
+            sample_from_topk_hardest=5,
         )
         (
             test_anchor_examples,
@@ -271,7 +270,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
             examples=test_examples,
             embeddings=test_embeddings,
             normalize_l2=True,
-            sample_from_topk_hardest=3,
+            sample_from_topk_hardest=5,
         )
         del hard_triplet_miner
 
@@ -364,6 +363,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
         delete_path(saving_folder_name)
         self.next(self.finetune)
 
+    @card(type="blank")
     @step
     def finetune(self):
         """
@@ -374,9 +374,11 @@ class FacialRecognitionTrainFlow(FlowSpec):
         import json
         import math
         import os
+        from io import BytesIO
         from uuid import uuid4
 
         import boto3
+        import joblib
         import matplotlib.pyplot as plt
         import numpy as np
         import pandas as pd
@@ -396,6 +398,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
         from torch.utils.data import DataLoader
         from tqdm import tqdm
 
+        from src.inference.config import ProductionConfig
         from src.inference.model import init_model, load_state_dict, save_state_dict
         from src.train.encoding import get_triplet_embeddings
         from src.train.preprocessing import get_augmentations, load_input_example
@@ -571,21 +574,21 @@ class FacialRecognitionTrainFlow(FlowSpec):
         trainloader = DataLoader(
             dataset=trainset,
             batch_size=self.train_batch_size,
-            num_workers=0,
+            num_workers=1,
             drop_last=True,
         )
         devloader = DataLoader(
             dataset=devset,
             batch_size=self.eval_batch_size,
             shuffle=False,
-            num_workers=0,
+            num_workers=1,
             drop_last=False,
         )
         testloader = DataLoader(
             dataset=testset,
             batch_size=self.eval_batch_size,
             shuffle=False,
-            num_workers=0,
+            num_workers=1,
             drop_last=False,
         )
 
@@ -665,11 +668,15 @@ class FacialRecognitionTrainFlow(FlowSpec):
             * len(trainloader)  # epoch ending steps case
             for i in range(1, (self.evals_per_epoch * self.max_epochs) + 1)
         ]
-        state_dict_path = "/tmp/facial_recognition_model.pth"
+        this_path_id = str(uuid4())
+        out_path = os.path.join("/tmp", this_path_id)
+        os.makedirs(out_path, exist_ok=True)
+        state_dict_path = os.path.join(out_path, "facial_recognition_model.pth")
         curr_es_patience = 0
         best_accuracy = -999
+        all_train_losses = []
         for epoch in range(1, self.max_epochs + 1):
-            self.logger.info(f"Start of epoch {epoch}/{self.max_epochs + 1}")
+            self.logger.info(f"Start of epoch {epoch}/{self.max_epochs}")
             for batch in tqdm(
                 trainloader, total=len(trainloader), desc=f"Epoch {epoch}"
             ):
@@ -691,43 +698,55 @@ class FacialRecognitionTrainFlow(FlowSpec):
                 optimizer.step()
                 step += 1
 
+                all_train_losses.append(loss.item())
+                metric_tracker.log(
+                    name="train_loss_50batches_movavg",
+                    value=np.mean(all_train_losses[-50:]),
+                    epoch=epoch,
+                    step=step,
+                )
                 metric_tracker.log(
                     name="train_loss", value=loss.item(), epoch=epoch, step=step
                 )
 
                 if step in eval_steps:
-                    self.logger.info(f"Step {int(step)}/{int(max_step)}: evaluating..")
-                    dev_triplet_embeddings = get_triplet_embeddings(
-                        dataloader=devloader, model=model, device=device
-                    )
-                    dev_accuracies = triplet_embeddings_evaluator.evaluate(
-                        embeddings_anchors=dev_triplet_embeddings["anchors"],
-                        embeddings_positives=dev_triplet_embeddings["positives"],
-                        embeddings_negatives=dev_triplet_embeddings["negatives"],
-                    )
-                    for k, v in dev_accuracies.items():
-                        metric_tracker.log(
-                            name=f"dev_{k}", value=v, epoch=epoch, step=step
-                        )
-
-                    dev_max_accuracy = max(dev_accuracies.values())
-
-                    if dev_max_accuracy >= best_accuracy:
+                    with torch.no_grad():
                         self.logger.info(
-                            f"New best model: dev_max_accuracy {round(best_accuracy, 3)} -> {round(dev_max_accuracy, 3)}"
+                            f"Step {int(step)}/{int(max_step)}: evaluating.."
                         )
-                        save_state_dict(model=model, state_dict_path=state_dict_path)
-                        best_accuracy = dev_max_accuracy
-                        if self.early_stopping:
-                            curr_es_patience = 0
-                    else:
-                        self.logger.info("No increase in accuracy")
-                        if self.early_stopping:
-                            curr_es_patience += 1
-                            self.logger.info(f"ES patience: {curr_es_patience}")
-                            if curr_es_patience >= self.early_stopping_patience:
-                                self.logger.info(f"ES max patience reached")
-                                break
+                        dev_triplet_embeddings = get_triplet_embeddings(
+                            dataloader=devloader, model=model, device=device
+                        )
+                        dev_accuracies = triplet_embeddings_evaluator.evaluate(
+                            embeddings_anchors=dev_triplet_embeddings["anchors"],
+                            embeddings_positives=dev_triplet_embeddings["positives"],
+                            embeddings_negatives=dev_triplet_embeddings["negatives"],
+                        )
+                        for k, v in dev_accuracies.items():
+                            metric_tracker.log(
+                                name=f"dev_{k}", value=v, epoch=epoch, step=step
+                            )
+
+                        dev_max_accuracy = max(dev_accuracies.values())
+
+                        if dev_max_accuracy >= best_accuracy:
+                            self.logger.info(
+                                f"New best model: dev_max_accuracy {round(best_accuracy, 3)} -> {round(dev_max_accuracy, 3)}"
+                            )
+                            save_state_dict(
+                                model=model, state_dict_path=state_dict_path
+                            )
+                            best_accuracy = dev_max_accuracy
+                            if self.early_stopping:
+                                curr_es_patience = 0
+                        else:
+                            self.logger.info("No increase in accuracy")
+                            if self.early_stopping:
+                                curr_es_patience += 1
+                                self.logger.info(f"ES patience: {curr_es_patience}")
+                                if curr_es_patience >= self.early_stopping_patience:
+                                    self.logger.info(f"ES max patience reached")
+                                    break
             else:
                 continue
             break
@@ -771,14 +790,14 @@ class FacialRecognitionTrainFlow(FlowSpec):
 
         # calibrating
         self.logger.info("Calibrating test set scores")
-        test_scores["calib_score"] = calibrator.transform(test_scores)
+        test_scores["calib_score"] = calibrator.transform(test_scores["score"].values)
 
         # measures
         self.logger.info("Calculating test set metrics")
         metric_tracker.log(
             name=f"test_calibrated_accuracy",
             value=accuracy_score(
-                y_true=test_scores["match"],
+                y_true=test_scores["match"].values,
                 y_pred=(test_scores["calib_score"] >= 0.5).astype(int),
             ),
             epoch=epoch,
@@ -787,7 +806,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
         metric_tracker.log(
             name=f"test_calibrated_f1_score",
             value=f1_score(
-                y_true=test_scores["match"],
+                y_true=test_scores["match"].values,
                 y_pred=(test_scores["calib_score"] >= 0.5).astype(int),
             ),
             epoch=epoch,
@@ -810,18 +829,20 @@ class FacialRecognitionTrainFlow(FlowSpec):
         self.logger.info("Saving plots")
 
         self.logger.info("Saving reliability diagram..")
-        fig = plt.figure()
+        y_true = test_scores["match"].values
         yhat_uncalibrated = test_scores["score"].values
+        yhat_uncalibrated = np.clip(yhat_uncalibrated, a_min=0, a_max=1)
         yhat_calibrated = test_scores["calib_score"].values
         fop_uncalibrated, mpv_uncalibrated = calibration_curve(
-            y_true=test_scores["match"].values,
+            y_true=y_true,
             y_prob=yhat_uncalibrated,
             n_bins=10,
-            normalize=True,
         )
         fop_calibrated, mpv_calibrated = calibration_curve(
-            y_true=test_scores["match"].values, y_prob=yhat_calibrated, n_bins=10
+            y_true=y_true, y_prob=yhat_calibrated, n_bins=10
         )
+
+        fig = plt.figure()
         plt.plot(
             [0, 1],
             [0, 1],
@@ -830,30 +851,62 @@ class FacialRecognitionTrainFlow(FlowSpec):
             label="perfect calibrated line",
         )
         plt.plot(
-            mpv_uncalibrated, fop_uncalibrated, marker=".", label="uncalibrated scores"
+            mpv_uncalibrated, fop_uncalibrated, marker=".", label="uncalibrated model"
         )
-        plt.plot(mpv_calibrated, fop_calibrated, marker=".", label="calibrated scores")
-        current.card.append(
-            Image.from_matplotlib(fig, label="model reliability diagram")
-        )
+        plt.plot(mpv_calibrated, fop_calibrated, marker=".", label="calibrated model")
+        plt.title("uncalibrated vs. calibrated score curves")
+        plt.xlabel("predicted proba")
+        plt.ylabel("real proba")
+        plt.legend()
+        current.card.append(Image.from_matplotlib(fig, label=f"reliability plot"))
+        plt.close()
 
-        self.logger.info("Saving reliability diagram..")
-        fig = plt.figure()
-        for metric, metric_data in self.metrics:
+        self.logger.info("Saving optimization plots..")
+        for metric, metric_data in self.metrics.items():
             df = pd.DataFrame(metric_data)
             fig = plt.figure()
-
-            plt.plot(df["step"], df["metric"], marker="o", linestyle="-", label=metric)
+            plt.plot(df["step"], df[metric], marker="o", linestyle="-", label=metric)
             plt.title(f"{metric} vs. step")
             plt.xlabel("step")
             plt.ylabel("metric")
             plt.grid(True)
-
+            plt.legend()
             current.card.append(Image.from_matplotlib(fig, label=f"{metric} plot"))
+            plt.close()
+
+        # creating cfg, sending stuff to s3
+        self.logger.info("Creating ProdConfig and sending models to S3")
+        self.s3_model_key = f"/models/{this_path_id}/facial_recognition_model.pth"
+        s3_client.upload_file(state_dict_path, self.bucket, self.s3_model_key)
+
+        self.s3_calibrator_key = f"/models/{this_path_id}/calibrator.joblib"
+        calibrator_bytes = BytesIO()
+        joblib.dump(model, calibrator_bytes)
+        calibrator_bytes.seek(0)
+        s3_client.put_object(
+            Bucket=self.bucket,
+            Key=self.s3_calibrator_key,
+            Body=calibrator_bytes.getvalue(),
+        )
+
+        self.config_params = dict(
+            model_name=self.model_name,
+            model_init_kwargs=self.model_init_kwargs,
+            resize_hw=self.resize_hw,
+            norm_mean=self.norm_mean,
+            norm_std=self.norm_std,
+            s3_model_state_dict_bucket=self.bucket,
+            s3_model_state_dict_key=self.s3_model_key,
+            s3_calibrator_bucket=self.bucket,
+            s3_calibrator_key=self.s3_calibrator_key,
+        )
+
+        self.production_config = ProductionConfig(**self.config_params)
 
         # cleanup
         self.logger.info("Deleting everything downloaded..")
         delete_path(saving_folder_name)
+        delete_path(out_path)
         self.next(self.end)
 
     @step

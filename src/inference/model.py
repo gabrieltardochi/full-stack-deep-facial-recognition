@@ -1,5 +1,4 @@
-from typing import Dict, List
-
+import joblib
 import timm
 import torch
 import torch.nn as nn
@@ -17,6 +16,10 @@ class FacialRecognitionNet(nn.Module):
     def forward(self, image_input: Tensor) -> Tensor:
         image_features = self.image_model(image_input)
         return image_features.squeeze()
+
+
+def load_calibrator(calibrator_path):
+    return joblib.load(calibrator_path)
 
 
 def init_model(model_name, model_init_kwargs):

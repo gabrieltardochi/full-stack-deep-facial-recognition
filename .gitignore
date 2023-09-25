@@ -1,8 +1,10 @@
 # custom
 s3-data/
 lfw_dataset/
-.metaflow*
-.vscode
+.metaflow/
+.vscode/
+metaflow_card_cache/
+.ruff_cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,3 +1,5 @@
+torch
+timm
 metaflow
 pandas
 wget
@@ -6,3 +8,5 @@ python-dotenv
 fire
 supertriplets
 matplotlib
+joblib
+torchvision

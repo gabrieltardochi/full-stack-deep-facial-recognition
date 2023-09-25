@@ -2,12 +2,17 @@ VENV = .venv
 PIP = $(VENV)/bin/pip3
 PYTHON = python3.10
 
-venv: requirements.txt
+app-venv: requirements-app.txt
 	rm -rf $(VENV)
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
-dev-venv: requirements.txt requirements-dev.txt
+	$(PIP) install -r requirements-app.txt
+train-venv: requirements-train.txt
+	rm -rf $(VENV)
+	$(PYTHON) -m venv $(VENV)
+	$(PIP) install --upgrade pip
+	$(PIP) install -r requirements-train.txt
+dev-venv: requirements-dev.txt
 	rm -rf $(VENV)
 	$(PYTHON) -m venv $(VENV)
 	$(PIP) install --upgrade pip

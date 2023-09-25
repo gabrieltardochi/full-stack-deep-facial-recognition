@@ -1,0 +1,11 @@
+metaflow
+boto3
+python-dotenv
+torch
+timm
+scikit-learn
+gunicorn
+uvicorn
+fastapi
+joblib
+torchvision

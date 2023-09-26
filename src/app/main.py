@@ -3,7 +3,6 @@ from uuid import uuid4
 
 import torch
 import uvicorn
-from dotenv import load_dotenv
 from elasticsearch import Elasticsearch
 from fastapi import FastAPI, Request
 from fastapi.logger import logger
@@ -88,7 +87,12 @@ def index(request: Request, body: IndexInput):
     resp = app.package["elasticsearch"].index(
         index=app.package["es_index_name"], document=doc
     )
-    return {"msg": resp["result"]}
+    # prepare json for returning
+    results = {"msg": resp["result"]}
+
+    logger.info(f"results: {results}")
+
+    return {"error": False, "results": results}
 
 
 @app.post(

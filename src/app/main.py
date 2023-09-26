@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.logger import logger
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.app.const import ES_INDEX, ESL_URL, MF_RUN_ID
+from src.app.const import ES_INDEX, ES_URL, MF_RUN_ID
 from src.app.schema import (
     ErrorResponse,
     IndexInput,
@@ -45,7 +45,7 @@ async def startup_event():
     logger.info("Starting API!")
     logger.info("Loading models..")
     app.package = load(run=MF_RUN_ID)
-    app.package["elasticsearch"] = Elasticsearch(ESL_URL)
+    app.package["elasticsearch"] = Elasticsearch(ES_URL)
     app.package["es_index_name"] = ES_INDEX
 
 
@@ -56,10 +56,10 @@ async def startup_event():
 )
 def index(request: Request, body: IndexInput):
     """
-    Perform facial recognition given input data
+    Index a person's face so we can recognize later
     """
 
-    logger.info("API predict called")
+    logger.info("API index called")
     logger.info(f"input: {body}")
     rid = str(uuid4())
 
@@ -98,10 +98,10 @@ def index(request: Request, body: IndexInput):
 )
 def recognize(request: Request, body: RecognizeInput):
     """
-    Perform facial recognition given input data
+    Perform facial recognition
     """
 
-    logger.info("API predict called")
+    logger.info("API recognize called")
     logger.info(f"input: {body}")
     rid = str(uuid4())
 
@@ -127,7 +127,7 @@ def recognize(request: Request, body: RecognizeInput):
         embeddings = app.package["encoder"](image_input).cpu().numpy().tolist()
 
     # search people index
-    resp = app.package["elasticsearch"].search(
+    resp = app.package["elasticsearch"].knn_search(
         index=app.package["es_index_name"],
         knn={
             "field": "embeddings",
@@ -139,10 +139,8 @@ def recognize(request: Request, body: RecognizeInput):
     )
 
     # calibrate best matching cosine similarity
-    y_calib = app.package["calibrator"].transform(
-        [resp["response"]["hits"]["max_score"]]
-    )[0]
-    name = resp["response"]["hits"][0]["_source"]["name"]
+    y_calib = app.package["calibrator"].transform([resp["hits"]["max_score"]])[0]
+    name = resp["hits"]["hits"][0]["_source"]["name"]
 
     # prepare json for returning
     results = {"proba": y_calib, "pred": name}

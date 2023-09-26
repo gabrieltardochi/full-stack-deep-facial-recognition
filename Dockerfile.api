@@ -1,0 +1,24 @@
+FROM python:3.10-slim
+
+ENV USERNAME=facial-recognition-api
+
+# venv as default python
+ENV VIRTUAL_ENV=/opt/venv
+RUN python3.10 -m venv $VIRTUAL_ENV
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# project stuff and dependencies
+WORKDIR /project
+
+RUN mkdir -p src/inference src/app
+
+COPY requirements-app.txt requirements.txt
+COPY src/app /project/src/app
+COPY src/inference /project/src/inference
+
+RUN pip3 install --upgrade pip && \
+    pip3 install -r requirements.txt
+
+EXPOSE 8080
+
+CMD ["gunicorn", "-w", "2", "-b", ":8080", "-t", "300", "-k", "uvicorn.workers.UvicornWorker", "--reload", "src.app.main:app"]

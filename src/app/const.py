@@ -5,5 +5,4 @@ from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env")
 MF_RUN_ID = os.environ["MF_RUN_ID"]
 ES_INDEX = os.environ["ES_INDEX"]
-ES_API_PORT = os.environ["ES_API_PORT"]
-ESL_URL = f"http://localhost:{ES_API_PORT}"
+ES_URL = os.environ["ES_URL"]

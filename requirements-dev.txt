@@ -1,3 +1,4 @@
 -r requirements-train.txt
 -r requirements-app.txt
 pre-commit
+streamlit

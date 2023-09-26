@@ -2,7 +2,7 @@ import os
 from uuid import uuid4
 
 import boto3
-from metaflow import Step
+from metaflow import Step, namespace
 
 from src.inference.model import init_model, load_calibrator, load_state_dict
 from src.inference.utils import delete_path
@@ -33,6 +33,7 @@ class ProductionConfig:
 
 
 def load(run):
+    namespace(None)
     cfg = Step(f"FacialRecognitionTrainFlow/{run}/end").task.data.production_config
 
     rid = str(uuid4())
@@ -46,6 +47,13 @@ def load(run):
         endpoint_url=os.environ["S3_URL"],
     )
 
+    # calibrator
+    calibrator_path = os.path.join(base_path, "calibrator.joblib")
+    s3_client.download_file(
+        cfg.s3_calibrator_bucket, cfg.s3_calibrator_key, calibrator_path
+    )
+    calibrator = load_calibrator(calibrator_path=calibrator_path)
+
     # encoder
     state_dict_path = os.path.join(base_path, "model_state_dict.pth")
     s3_client.download_file(
@@ -54,15 +62,9 @@ def load(run):
     encoder = init_model(
         model_name=cfg.model_name, model_init_kwargs=cfg.model_init_kwargs
     )
-    encoder.to("cpu")
     encoder = load_state_dict(model=encoder, state_dict_path=state_dict_path)
-
-    # calibrator
-    calibrator_path = os.path.join(base_path, "calibrator.joblib")
-    s3_client.download_file(
-        cfg.s3_calibrator_bucket, cfg.s3_calibrator_key, calibrator_path
-    )
-    calibrator = load_calibrator(calibrator_path=calibrator_path)
+    encoder.to("cpu")
+    encoder.eval()
 
     delete_path(path=base_path)
     return {

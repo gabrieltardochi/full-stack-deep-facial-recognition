@@ -35,7 +35,10 @@ def init_model(model_name, model_init_kwargs):
 
 
 def load_state_dict(model, state_dict_path):
-    model.load_state_dict(torch.load(state_dict_path))
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    model.load_state_dict(
+        torch.load(state_dict_path, map_location=torch.device(device))
+    )
     model.eval()
     return model
 

@@ -1,0 +1,35 @@
+version: "3"
+services:
+  facial-recognition-api:
+    container_name: facial-recognition-api
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_URL=${WITHIN_CONTAINER_S3_URL}
+      - METAFLOW_PROFILE=${METAFLOW_PROFILE}
+      - METAFLOW_SERVICE_URL=${WITHIN_CONTAINER_MF_SERVICE_URL}
+      - METAFLOW_S3_ENDPOINT_URL=${WITHIN_CONTAINER_MF_S3_ENDPOINT_URL}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - MF_RUN_ID=${MF_RUN_ID}
+      - ES_INDEX=${ES_INDEX}
+      - ES_URL=${WITHIN_CONTAINER_ES_URL}
+    ports:
+      - ${RECOGNITION_API_PORT}:8080
+    networks:
+      - facial-recognition-network
+      - metaflow-network
+    volumes:
+      - ~/.metaflowconfig:/root/.metaflowconfig:ro 
+      # - ~/.metaflowconfig:/.metaflowconfig
+    command: ["sleep", "infinity"]
+
+networks:
+  facial-recognition-network:
+    name: facial-recognition-network
+  metaflow-network:
+    external:
+      name: metaflow-network

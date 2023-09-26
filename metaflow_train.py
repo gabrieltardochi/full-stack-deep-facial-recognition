@@ -888,7 +888,7 @@ class FacialRecognitionTrainFlow(FlowSpec):
 
         self.s3_calibrator_key = f"/models/{this_path_id}/calibrator.joblib"
         calibrator_bytes = BytesIO()
-        joblib.dump(model, calibrator_bytes)
+        joblib.dump(calibrator, calibrator_bytes)
         calibrator_bytes.seek(0)
         s3_client.put_object(
             Bucket=self.bucket,

@@ -24,8 +24,6 @@ services:
       - metaflow-network
     volumes:
       - ~/.metaflowconfig:/root/.metaflowconfig:ro 
-      # - ~/.metaflowconfig:/.metaflowconfig
-    command: ["sleep", "infinity"]
 
 networks:
   facial-recognition-network:

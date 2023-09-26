@@ -42,7 +42,7 @@ class IndexInput(BaseModel):
         ..., title="image file format (png, jpg..)", example="jpg"
     )
     name: str = Field(
-        ..., title="name of the person being indexed", example="elon musk"
+        ..., title="name of the person being indexed", example="elon musk", min_length=1
     )
 
 

@@ -4,13 +4,18 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+from src.inference.utils import get_last_linear_out_features
+
 
 class FacialRecognitionNet(nn.Module):
-    def __init__(self, model_name) -> None:
+    def __init__(self, model_name, embeddings_dim) -> None:
         super().__init__()
         self.timm_image_model_name = model_name
         self.image_model = timm.create_model(
             self.timm_image_model_name, pretrained=True, num_classes=0
+        )
+        self.linear_projection = nn.Linear(
+            get_last_linear_out_features(self.image_model), embeddings_dim
         )
 
     def forward(self, image_input: Tensor) -> Tensor:

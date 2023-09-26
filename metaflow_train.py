@@ -1,4 +1,5 @@
 import logging
+import os
 
 from dotenv import load_dotenv
 from metaflow import FlowSpec, Parameter, card, current, step
@@ -50,7 +51,11 @@ class FacialRecognitionTrainFlow(FlowSpec):
         type=float,
     )
     model_name = Parameter("model_name", default="resnet18", type=str)
-    model_init_kwargs = Parameter("model_init_kwargs", default={}, type=dict)
+    model_init_kwargs = Parameter(
+        "model_init_kwargs",
+        default={"embeddings_dim": os.getenv("EMBEDDINGS_DIMENSION")},
+        type=dict,
+    )
     optimizer = Parameter("optimizer", default="adamw", type=str)
     loss = Parameter("loss", default="batch-hard-soft-margin", type=str)
     distance = Parameter("distance", default="euclidean", type=str)

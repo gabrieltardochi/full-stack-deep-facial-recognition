@@ -63,7 +63,7 @@ services:
     container_name: facial-recognition-es-create-index
     image: curlimages/curl:8.3.0
     entrypoint: >
-      curl -X PUT "facial-recognition-es:9200/${ES_INDEX}?pretty" -H 'Content-Type: application/json' -d' { "mappings": { "properties": { "embeddings": { "type": "dense_vector", "dims": ${ES_INDEX_EMBEDDINGS_DIMENSION}, "index": true, "similarity": "cosine" }, "name": { "type": "keyword" } } } } '
+      curl -X PUT "facial-recognition-es:9200/${ES_INDEX}?pretty" -H 'Content-Type: application/json' -d' { "mappings": { "properties": { "embeddings": { "type": "dense_vector", "dims": ${EMBEDDINGS_DIMENSION}, "index": true, "similarity": "cosine" }, "name": { "type": "keyword" } } } } '
     depends_on:
       facial-recognition-es:
         condition: service_healthy

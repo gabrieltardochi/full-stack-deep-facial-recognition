@@ -41,8 +41,8 @@ class IndexInput(BaseModel):
     image_format: ImageFormatEnum = Field(
         ..., title="image file format (png, jpg..)", example="jpg"
     )
-    name: ImageFormatEnum = Field(
-        ..., title="name of the person being indexed", example="gabriel tardochi"
+    name: str = Field(
+        ..., title="name of the person being indexed", example="elon musk"
     )
 
 

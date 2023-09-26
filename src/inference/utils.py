@@ -2,6 +2,7 @@ import os
 import shutil
 
 import requests
+import torch.nn as nn
 from PIL import Image
 
 
@@ -20,3 +21,17 @@ def delete_path(path):
         os.remove(path)
     elif os.path.isdir(path):
         shutil.rmtree(path)
+
+
+# Define a function to get the out_features of the last linear layer
+def get_last_linear_out_features(model):
+    last_linear = None
+
+    for module in model.modules():
+        if isinstance(module, nn.Linear):
+            last_linear = module
+
+    if last_linear is None:
+        raise ValueError("No Linear (fully connected) layer found in the model.")
+
+    return last_linear.out_features

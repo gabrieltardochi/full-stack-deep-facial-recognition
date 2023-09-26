@@ -4,17 +4,23 @@ from uuid import uuid4
 import torch
 import uvicorn
 from dotenv import load_dotenv
+from elasticsearch import Elasticsearch
 from fastapi import FastAPI, Request
 from fastapi.logger import logger
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.app.const import MF_RUN_ID
-from src.app.schema import ErrorResponse, SearchInput, SearchResponse
+from src.app.const import ES_INDEX, ESL_URL, MF_RUN_ID
+from src.app.schema import (
+    ErrorResponse,
+    IndexInput,
+    IndexResponse,
+    IndexResult,
+    RecognizeInput,
+    RecognizeResponse,
+)
 from src.inference.config import load
 from src.inference.preprocessing import prepare_input
 from src.inference.utils import download_image, read_image_from_disk
-
-load_dotenv(dotenv_path=".env")
 
 # Initialize API Server
 app = FastAPI(
@@ -39,14 +45,58 @@ async def startup_event():
     logger.info("Starting API!")
     logger.info("Loading models..")
     app.package = load(run=MF_RUN_ID)
+    app.package["elasticsearch"] = Elasticsearch(ESL_URL)
+    app.package["es_index_name"] = ES_INDEX
+
+
+@app.post(
+    "/api/v1/index",
+    response_model=IndexResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+)
+def index(request: Request, body: IndexInput):
+    """
+    Perform facial recognition given input data
+    """
+
+    logger.info("API predict called")
+    logger.info(f"input: {body}")
+    rid = str(uuid4())
+
+    os.makedirs(f"/tmp/{rid}", exist_ok=True)
+
+    image_path = f"/tmp/{rid}/image.{body.image_format}"
+
+    # prepare data
+    download_image(url=body.image_url, save_path=image_path)
+    image = read_image_from_disk(image_path=image_path)
+
+    # encode
+    with torch.no_grad():
+        # convert input from list to Tensor
+        image_input = prepare_input(
+            image=image,
+            resize_hw=app.package["resize_hw"],
+            norm_mean=app.package["norm_mean"],
+            norm_std=app.package["norm_std"],
+        )
+
+        # encode
+        embeddings = app.package["encoder"](image_input).cpu().numpy().tolist()
+
+    doc = {"embeddings": embeddings, "name": str(body.name).lower().strip()}
+    resp = app.package["elasticsearch"].index(
+        index=app.package["es_index_name"], document=doc
+    )
+    return {"msg": resp["result"]}
 
 
 @app.post(
     "/api/v1/recognize",
-    response_model=SearchResponse,
+    response_model=RecognizeResponse,
     responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-def recognize(request: Request, body: SearchInput):
+def recognize(request: Request, body: RecognizeInput):
     """
     Perform facial recognition given input data
     """

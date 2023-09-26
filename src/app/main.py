@@ -46,7 +46,7 @@ async def startup_event():
     response_model=SearchResponse,
     responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
 )
-def do_recognize(request: Request, body: SearchInput):
+def recognize(request: Request, body: SearchInput):
     """
     Perform facial recognition given input data
     """

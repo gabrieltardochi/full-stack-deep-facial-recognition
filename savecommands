@@ -9,3 +9,4 @@ curl -X DELETE "facial-recognition-es:9200/${ES_INDEX}"
 curl -X DELETE "localhost:9200/people-faces-index"
 curl -X GET "localhost:9200/people-faces-index/_stats?pretty"
 chmod +x index_people.sh
+streamlit run streamlit_webapp.py

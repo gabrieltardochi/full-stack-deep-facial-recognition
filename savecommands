@@ -4,4 +4,3 @@ export MF_RUN_ID=3
 gunicorn -w 2 -b :8080 -t 300 -k uvicorn.workers.UvicornWorker --reload src.app.main:app
 sudo chown 1000:1000 es-data
 curl https://localhost:9200 -ku 'admin:admin'
-curl -X PUT "localhost:9200/people-faces-index?pretty" -H 'Content-Type: application/json' -d' { "settings": { "index": { "number_of_shards": 3, "number_of_replicas": 2 } } } '

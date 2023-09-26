@@ -50,10 +50,12 @@ class FacialRecognitionTrainFlow(FlowSpec):
         default=0.2,
         type=float,
     )
-    model_name = Parameter("model_name", default="resnet18", type=str)
+    model_name = Parameter(
+        "model_name", default="tf_efficientnet_b0.ns_jft_in1k", type=str
+    )
     model_init_kwargs = Parameter(
         "model_init_kwargs",
-        default={"embeddings_dim": os.getenv("EMBEDDINGS_DIMENSION")},
+        default={"src_embeddings_dim": 1280, "tgt_embeddings_dim": 300},
         type=dict,
     )
     optimizer = Parameter("optimizer", default="adamw", type=str)

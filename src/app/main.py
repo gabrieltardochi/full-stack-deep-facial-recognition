@@ -124,16 +124,28 @@ def recognize(request: Request, body: RecognizeInput):
         )
 
         # encode
-        embeddings = app.package["encoder"](image_input)
+        embeddings = app.package["encoder"](image_input).cpu().numpy().tolist()
 
     # search people index
-    # TODO
+    resp = app.package["elasticsearch"].search(
+        index=app.package["es_index_name"],
+        knn={
+            "field": "embeddings",
+            "query_vector": embeddings,
+            "k": 1,
+            "num_candidates": 100,
+        },
+        fields=["name"],
+    )
 
     # calibrate best matching cosine similarity
-    # y_calib = app.package['calibrator'].transform([cos_sim])[0]
+    y_calib = app.package["calibrator"].transform(
+        [resp["response"]["hits"]["max_score"]]
+    )[0]
+    name = resp["response"]["hits"][0]["_source"]["name"]
 
     # prepare json for returning
-    results = {"proba": 0.7, "pred": "bla"}
+    results = {"proba": y_calib, "pred": name}
 
     logger.info(f"results: {results}")
 

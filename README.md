@@ -5,7 +5,7 @@ Leveraging metric learning via online mined hard triplets to easily scale and ge
 The proposed architecture, as is:
 
 <p align="left">
-<img src="docs/deep facial recognition arch.png" data-action="zoom">
+<img src="docs/deep-facial-recognition-arch.png" data-action="zoom">
 </p>
 
 # Training Procedure

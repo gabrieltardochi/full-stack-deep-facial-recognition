@@ -13,7 +13,6 @@ from src.app.schema import (
     ErrorResponse,
     IndexInput,
     IndexResponse,
-    IndexResult,
     RecognizeInput,
     RecognizeResponse,
 )
@@ -70,9 +69,8 @@ def index(request: Request, body: IndexInput):
     download_image(url=body.image_url, save_path=image_path)
     image = read_image_from_disk(image_path=image_path)
 
-    # encode
     with torch.no_grad():
-        # convert input from list to Tensor
+        # convert input to Tensor
         image_input = prepare_input(
             image=image,
             resize_hw=app.package["resize_hw"],
@@ -117,9 +115,8 @@ def recognize(request: Request, body: RecognizeInput):
     download_image(url=body.image_url, save_path=image_path)
     image = read_image_from_disk(image_path=image_path)
 
-    # encode
     with torch.no_grad():
-        # convert input from list to Tensor
+        # convert input to Tensor
         image_input = prepare_input(
             image=image,
             resize_hw=app.package["resize_hw"],

@@ -5,7 +5,7 @@ Streamlit demo:
 
 [![Watch the video](https://img.youtube.com/vi/gXg6tsIySJU/0.jpg)](https://www.youtube.com/embed/gXg6tsIySJU)
 
-> Note that due to the small size of training data (less than 10k images), the recognition power might not be optimal. It is worth noting that production facial recognition systems are typically trained on millions of samples.
+> Note that due to the small size of training data (~5k images), the recognition power might not be optimal. It is worth noting that production facial recognition systems are typically trained on millions of samples.
 
 # Architecture
 The (locally) implemented architecture, as is:

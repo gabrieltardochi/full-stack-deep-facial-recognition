@@ -83,15 +83,15 @@ Here are the settings used during training:
 * Linear projection (last layer) output dimension: 300
 
 <p align="left">
-  <img src="docs/train-loss-improvements.png" width="30%" data-action="zoom"/>
-  <img src="docs/dev-accuracy-improvements.png" width="30%" data-action="zoom"/>
+  <img src="docs/train-loss-improvements.png" width="50%" data-action="zoom"/>
+  <img src="docs/dev-accuracy-improvements.png" width="50%" data-action="zoom"/>
 </p>
 
 **Calibrating Face Matching Probabilities**
 
 I also trained an `scikit-learn.isotonic.IsotonicRegression` estimator to calibrate face matching probabilities given the cosine similarity scores to make outputs as reliable as possible. It was fitted using the dev split, and tested on the test set:
 
-<img src="docs/model-calibration.png" width="30%" data-action="zoom"/>
+<img src="docs/model-calibration.png" width="50%" data-action="zoom"/>
 
 # Production
 Overview of the inference stack. 
@@ -112,14 +112,14 @@ There are two main endpoints in the `facial-recognition-api`:
 Uses the trained encoder to calculate the vector representation of an input image. Indexes a document in Elasticsearch with the person's name and embeddings, in the form of:
 ```json
 {
-  "embeddings": [0.12, 0.523, 0.32, ..., 0.96, 0.04, 0.77],
+  "embeddings": [0.12, 0.523, 0.32, 0.96, 0.04, 0.77],  // in practice im using 300d vectors
   "name": "Elon Musk"
 }
 ``` 
 Returns status and Elasticsearch message to the indexing tentative:
 ```json
 {
-  "error": False,
+  "error": false,
   "msg": "Created"
 }
 ```
@@ -129,7 +129,7 @@ Returns status and Elasticsearch message to the indexing tentative:
 Uses the trained encoder to calculate the vector representation of an input image. Uses this as a query to search Elasticsearch for the closest known (indexed) person. With the closest person similarity score in hands, the probability calibrator is invoked, and the calibrated prediction is returned:
 ```json
 {
-  "error": False,
+  "error": false,
     "results": {
       "pred": "Elon Musk",
       "proba": 0.95
@@ -145,7 +145,7 @@ Elasticsearch is a distributed search and analytics engine built on Apache Lucen
 
 Cosine similarity is a measure of similarity between two non-zero vectors of an inner product space. It is defined to equal the cosine of the angle between them, which is also the same as the inner product of the same vectors normalized to both have length 1.
 
-<img src="docs/cosine-similarity-of-faces.png" width="25%" data-action="zoom"/>
+<img src="docs/cosine-similarity-of-faces.png" width="50%" data-action="zoom"/>
 
 *Embeddings of Elon Musk and Mark Zuckerberg faces in two dimensions.*
 

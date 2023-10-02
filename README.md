@@ -2,7 +2,10 @@
 Leverage Metaflow, PyTorch, AWS S3, Elasticsearch, FastAPI and Docker to create a production-ready facial recognition solution. It demonstrates the practical use of deep metric learning to recognize previously unseen faces without prior training.
 
 Streamlit demo:
-ToDo
+
+[![Watch the video](https://img.youtube.com/vi/gXg6tsIySJU/0.jpg)](https://www.youtube.com/embed/gXg6tsIySJU)
+
+> Note that due to the small size of training data (less than 10k images), the recognition power might not be optimal. It is worth noting that production facial recognition systems are typically trained on millions of samples.
 
 # Architecture
 The (locally) implemented architecture, as is:

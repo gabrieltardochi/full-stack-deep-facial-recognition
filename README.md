@@ -111,14 +111,14 @@ Uses the trained encoder to calculate the vector representation of an input imag
 ```json
 {
   "embeddings": [0.12, 0.523, 0.32, 0.96, 0.04, 0.77],
-  "name": "Elon Musk"
+  "name": "elon musk"
 }
 ``` 
 Returns status and Elasticsearch message to the indexing tentative:
 ```json
 {
   "error": false,
-  "msg": "Created"
+  "msg": "created"
 }
 ```
 
@@ -129,7 +129,7 @@ Uses the trained encoder to calculate the vector representation of an input imag
 {
   "error": false,
     "results": {
-      "pred": "Elon Musk",
+      "pred": "elon musk",
       "proba": 0.95
   }
 }
@@ -180,6 +180,6 @@ Theres a utility script `./index_people.sh` in case you want to batch index some
 Here are solutions for some common situations you might find yourself in:
 
 * Check if ES is running fine: `curl http://localhost:${ES_API_PORT} -ku 'admin:admin'` 
-* Delete the ES index: `curl -X DELETE "localhost:9200/people-faces-index"`
+* Delete the ES index: `curl -X DELETE "localhost:${ES_API_PORT}/${ES_INDEX}"`
 * Manually create the ES index: `docker-compose -f docker-compose-infra.yaml up facial-recognition-es-create-index`
 * Get ES index metrics (such as number of docs): `curl -X GET "localhost:${ES_API_PORT}/${ES_INDEX}/_stats?pretty"`

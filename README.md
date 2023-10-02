@@ -47,9 +47,7 @@ Data was divided as follows:
 I used an EffientNet (b0) that was trained (by paper authors) on ImageNet-1k and unlabeled JFT-300m using Noisy Student semi-supervised learning.  
 Here is a diagram of how this works in practice:
 
-<p align="left">
-  <img src="docs/noisy-student.png" width="50%" data-action="zoom"/>
-</p>
+<img src="docs/noisy-student.png" width="100%" data-action="zoom"/>
 
 ### Finetuning
 Since my objective here is to build a system capable of recognizing whatever person's face, traditional methods like multiclass classification were discarded.  
@@ -64,7 +62,7 @@ The goal of a model updated by a triplet loss is to correctly discriminate betwe
 
 Here is a scheme of one triplet loss optimization step (single triplet):
 <p align="left">
-  <img src="docs/hard-triplet-learning.png" width="75%" data-action="zoom"/>
+  <img src="docs/hard-triplet-learning.png" width="100%" data-action="zoom"/>
 </p>
 
 **Optimization settings**
@@ -83,8 +81,8 @@ Here are the settings used during training:
 * Linear projection (last layer) output dimension: 300
 
 <p align="left">
-  <img src="docs/train-loss-improvements.png" width="50%" data-action="zoom"/>
-  <img src="docs/dev-accuracy-improvements.png" width="50%" data-action="zoom"/>
+  <img src="docs/train-loss-improvements.png" width="40%" data-action="zoom"/>
+  <img src="docs/dev-accuracy-improvements.png" width="40%" data-action="zoom"/>
 </p>
 
 **Calibrating Face Matching Probabilities**

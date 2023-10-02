@@ -110,7 +110,7 @@ There are two main endpoints in the `facial-recognition-api`:
 Uses the trained encoder to calculate the vector representation of an input image. Indexes a document in Elasticsearch with the person's name and embeddings, in the form of:
 ```json
 {
-  "embeddings": [0.12, 0.523, 0.32, 0.96, 0.04, 0.77],  // in practice im using 300d vectors
+  "embeddings": [0.12, 0.523, 0.32, 0.96, 0.04, 0.77],
   "name": "Elon Musk"
 }
 ``` 
